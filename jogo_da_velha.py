@@ -3,7 +3,6 @@ import os
 
 knowledge_base = []
 
-
 def save_win_rate_to_txt(wins_x, total_games, mode):
     """
     Salva a taxa de vitórias do jogador X a cada 100 jogos em um arquivo .txt.
@@ -72,11 +71,9 @@ def save_knowledge_to_txt():
 
 
 def load_knowledge_from_txt():
-    """
-    Carrega o banco de conhecimento de um arquivo .txt.
-    """
     filename = "knowledge_base.txt"
     if not os.path.exists(filename):
+        print(f"Arquivo {filename} não encontrado.")
         return []
 
     knowledge = []
@@ -84,6 +81,7 @@ def load_knowledge_from_txt():
         current_record = {}
         for line in f:
             line = line.strip()
+            print(f"Lendo linha: {line}")  # Verifique a leitura do arquivo
             if line.startswith("Jogada:"):
                 if current_record:
                     knowledge.append(current_record)
@@ -100,6 +98,26 @@ def load_knowledge_from_txt():
             knowledge.append(current_record)
     return knowledge
 
+def update_knowledge_base(play, winner):
+    existing_record = next((record for record in knowledge_base if record['play'] == play), None)
+    if existing_record:
+        # Atualiza o número de vitórias, derrotas, empates e partidas
+        if winner == 'X':
+            existing_record['Wins'] += 1
+        elif winner == 'O':
+            existing_record['Losses'] += 1
+        else:
+            existing_record['Draws'] += 1
+        existing_record['Plays'] += 1
+    else:
+        # Cria um novo registro se não encontrar
+        knowledge_base.append({
+            'play': play,
+            'Wins': 1 if winner == 'X' else 0,
+            'Losses': 1 if winner == 'O' else 0,
+            'Draws': 1 if winner == 'Draw' else 0,
+            'Plays': 1
+        })
 
 def display(board):
     visual_board = ""
@@ -256,6 +274,9 @@ def auto_game_mode():
             wins_o += 1
 
         completed_games += 1
+
+        # Adiciona o registro na base de conhecimento
+        update_knowledge_base(str(moves[-1]), winner)
 
         # A cada 100 partidas, salvar a taxa de vitória (apenas para modos inteligentes)
         if choice in ['3', '4'] and completed_games % 100 == 0:
