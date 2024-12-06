@@ -99,6 +99,7 @@ def load_knowledge_from_txt():
     return knowledge
 
 def update_knowledge_base(play, winner):
+    # Atualiza a base de conhecimento
     existing_record = next((record for record in knowledge_base if record['play'] == play), None)
     if existing_record:
         # Atualiza o número de vitórias, derrotas, empates e partidas
@@ -215,21 +216,57 @@ def champion_game():
 def intelligent_game(is_champion_mode=False):
     board = [" " for _ in range(9)]
     moves = []
+
     while True:
-        machine(board, 'X')  # Jogador X (inteligente) faz a primeira jogada
+        # Jogador X (inteligente) faz a primeira jogada
+        move = get_intelligent_move(board)
+        board[move] = 'X'
         moves.append(board[:])
         winner = final_check(board)
         if winner:
             break
+
         if is_champion_mode:
             champion_machine(board)  # Jogador O (campeão) joga após X
         else:
             machine(board, 'O')  # Oponente (O) joga aleatoriamente
+
         moves.append(board[:])
         winner = final_check(board)
         if winner:
             break
+
     return moves, winner
+
+
+def get_intelligent_move(board):
+    """
+    Retorna a próxima jogada inteligente baseada na base de conhecimento.
+    Se não houver conhecimento suficiente, realiza uma jogada aleatória.
+    """
+    # Consulta a base de conhecimento para obter a melhor jogada (ou faz uma aleatória)
+    possible_moves = [i for i, cell in enumerate(board) if cell == " "]
+
+    # Aqui você pode implementar a lógica de consulta à base de conhecimento para escolher uma jogada inteligente
+    for move in possible_moves:
+        # Exemplo de como consultar a base de conhecimento
+        best_move = consult_knowledge_base(board, move)
+        if best_move is not None:
+            return best_move
+
+    # Se não houver jogada inteligente possível, retorna uma jogada aleatória
+    return random.choice(possible_moves)
+
+
+def consult_knowledge_base(board, move):
+    """
+    Consulta a base de conhecimento para verificar se a jogada é boa ou não.
+    Esta função pode ser expandida para avaliar o movimento com base em dados anteriores.
+    """
+    # Implementação de consulta simples à base de conhecimento (exemplo)
+    # Aqui você pode aplicar uma lógica baseada na base de conhecimento.
+    # No momento, retornamos None, o que fará com que o jogador escolha aleatoriamente.
+    return None
 
 def final_check(board):
     if check(board, 'X'):
@@ -275,8 +312,9 @@ def auto_game_mode():
 
         completed_games += 1
 
-        # Adiciona o registro na base de conhecimento
-        update_knowledge_base(str(moves[-1]), winner)
+        # Atualizar a base de conhecimento apenas para os modos inteligentes
+        if choice in ['3', '4']:
+            update_knowledge_base(str(moves[-1]), winner)
 
         # A cada 100 partidas, salvar a taxa de vitória (apenas para modos inteligentes)
         if choice in ['3', '4'] and completed_games % 100 == 0:
