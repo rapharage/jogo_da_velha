@@ -200,11 +200,13 @@ def champion_game():
     board = [" " for _ in range(9)]
     moves = []
     while True:
+        # X (intelligent player) plays first
         machine(board, 'X')
         moves.append(board[:])
         winner = final_check(board)
         if winner:
             break
+        # Champion (O) plays second
         champion_machine(board)
         moves.append(board[:])
         winner = final_check(board)
