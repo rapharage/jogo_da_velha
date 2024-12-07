@@ -37,7 +37,6 @@ def save_moves_to_txt(moves, winner, mode):
         f.write(f"Resultado: {winner}\n")
         f.write("=" * 30 + "\n\n")
 
-
 def save_summary_to_txt(wins_x, wins_o, num_games, mode):
     """
     Salva o resumo das estatísticas (vitórias de X e O) em um arquivo .txt.
@@ -54,7 +53,6 @@ def save_summary_to_txt(wins_x, wins_o, num_games, mode):
         f.write(f"Vitórias do O: {wins_o}\n")
         f.write("=" * 30 + "\n\n")
 
-
 def save_knowledge_to_txt():
     filename = "knowledge_base.txt"
     print(f"Salvando {len(knowledge_base)} registros na base de conhecimento...")
@@ -67,8 +65,6 @@ def save_knowledge_to_txt():
             f.write(f"  Empates: {record['Draws']}\n")
             f.write(f"  Total de Partidas: {record['Plays']}\n")
             f.write("-" * 30 + "\n")
-
-
 
 def load_knowledge_from_txt():
     filename = "knowledge_base.txt"
@@ -128,56 +124,78 @@ def display(board):
             visual_board += "---+---+---\n"
     print(visual_board)
 
-
-def check(board, player):
-    for i in range(0, 9, 3):
-        if all(board[i + j] == player for j in range(3)):
-            return True
-    for i in range(3):
-        if all(board[i + j * 3] == player for j in range(3)):
-            return True
-    if all(board[i] == player for i in [0, 4, 8]) or all(board[i] == player for i in [2, 4, 6]):
-        return True
-    return False
-
-
 def machine(board, player):
     empty = [i for i in range(9) if board[i] == " "]
     if empty:
         board[random.choice(empty)] = player
 
-
 def champion_machine(board):
-    def check_win(champ_board, player):
+    """
+    Jogada inteligente para o campeão (O) que tenta vencer, bloquear ou jogar em uma posição estratégica.
+    """
+    # Função para verificar se o jogador pode ganhar ou bloquear
+    def check_win(board, player):
         for i in range(9):
-            if champ_board[i] == " ":
-                champ_board[i] = player
-                if check(champ_board, player):
-                    champ_board[i] = " "
-                    return i
-                champ_board[i] = " "
-        return -1
+            if board[i] == " ":
+                board[i] = player  # Simula a jogada
+                if check(board, player):  # Verifica se o jogador ganha
+                    board[i] = " "  # Desfaz a jogada
+                    return i  # Retorna a posição para bloquear ou ganhar
+                board[i] = " "  # Desfaz a jogada
+        return -1  # Não encontrou uma vitória
 
+    # 1. Tenta vencer jogando 'O' (Campeão)
     pos = check_win(board, 'O')
     if pos != -1:
         board[pos] = 'O'
+        print(f"Campeão (O) jogou para vencer na posição {pos}")
+        print("Tabuleiro após jogada do Campeão:", board)
+        if check(board, 'O'):
+            print("O campeão (O) venceu!")
         return
+
+    # 2. Tenta bloquear uma vitória do 'X'
     pos = check_win(board, 'X')
     if pos != -1:
         board[pos] = 'O'
+        print(f"Campeão (O) bloqueou X na posição {pos}")
+        print("Tabuleiro após jogada do Campeão:", board)
+        if check(board, 'O'):
+            print("O campeão (O) venceu!")
+        if check(board, 'X'):
+            print("O X venceu!")
         return
+
+    # 3. Se não há vitórias ou bloqueios, joga no centro
     if board[4] == " ":
         board[4] = 'O'
+        print("Campeão (O) jogou no centro.")
+        print("Tabuleiro após jogada do Campeão:", board)
+        if check(board, 'O'):
+            print("O campeão (O) venceu!")
         return
+
+    # 4. Se o centro está ocupado, joga em um dos cantos
     for corner in [0, 2, 6, 8]:
         if board[corner] == " ":
             board[corner] = 'O'
+            print(f"Campeão (O) jogou no canto {corner}.")
+            print("Tabuleiro após jogada do Campeão:", board)
+            if check(board, 'O'):
+                print("O campeão (O) venceu!")
             return
+
+    # 5. Se os cantos estão ocupados, joga nas bordas
     for edge in [1, 3, 5, 7]:
         if board[edge] == " ":
             board[edge] = 'O'
+            print(f"Campeão (O) jogou na borda {edge}.")
+            print("Tabuleiro após jogada do Campeão:", board)
+            if check(board, 'O'):
+                print("O campeão (O) venceu!")
+            if check(board, 'X'):
+                print("O X venceu!")
             return
-
 
 def normal_game():
     board = [" " for _ in range(9)]
@@ -194,7 +212,6 @@ def normal_game():
         if winner:
             break
     return moves, winner
-
 
 def champion_game():
     board = [" " for _ in range(9)]
@@ -214,25 +231,31 @@ def champion_game():
             break
     return moves, winner
 
-
-def intelligent_game(is_champion_mode=False):
+def intelligent_game(is_champion_mode=True):
     board = [" " for _ in range(9)]
     moves = []
 
     while True:
         # Jogador X (inteligente) faz a primeira jogada
         move = get_intelligent_move(board)
-        board[move] = 'X'
+        if board[move] == " ":
+            board[move] = 'X'
+        else:
+            raise ValueError(f"Jogada inválida de X na posição {move}. Verifique a lógica do jogador inteligente.")
+
+        # Checa para ver se alguém venceu e registra
         moves.append(board[:])
         winner = final_check(board)
         if winner:
             break
 
+        # É a vez do jogador O (campeão)
         if is_champion_mode:
-            champion_machine(board)  # Jogador O (campeão) joga após X
+            champion_machine(board)
         else:
-            machine(board, 'O')  # Oponente (O) joga aleatoriamente
+            machine(board, 'O')  # Jogador O joga aleatoriamente
 
+        # Verifica após a jogada do jogador O
         moves.append(board[:])
         winner = final_check(board)
         if winner:
@@ -240,43 +263,78 @@ def intelligent_game(is_champion_mode=False):
 
     return moves, winner
 
-
 def get_intelligent_move(board):
     """
     Retorna a próxima jogada inteligente baseada na base de conhecimento.
     Se não houver conhecimento suficiente, realiza uma jogada aleatória.
     """
-    # Consulta a base de conhecimento para obter a melhor jogada (ou faz uma aleatória)
+    # Lista de movimentos possíveis
     possible_moves = [i for i, cell in enumerate(board) if cell == " "]
 
-    # Aqui você pode implementar a lógica de consulta à base de conhecimento para escolher uma jogada inteligente
+    # Consulta a base de conhecimento para cada movimento
     for move in possible_moves:
-        # Exemplo de como consultar a base de conhecimento
-        best_move = consult_knowledge_base(board, move)
-        if best_move is not None:
-            return best_move
+        intelligent_move = consult_knowledge_base(board, move)
+        if intelligent_move is not None:
+            return intelligent_move
 
-    # Se não houver jogada inteligente possível, retorna uma jogada aleatória
+    # Caso nenhuma jogada inteligente seja encontrada, faz uma jogada aleatória
     return random.choice(possible_moves)
-
 
 def consult_knowledge_base(board, move):
     """
-    Consulta a base de conhecimento para verificar se a jogada é boa ou não.
-    Esta função pode ser expandida para avaliar o movimento com base em dados anteriores.
+    Consulta a base de conhecimento para determinar se a jogada é inteligente.
+    :param board: O estado atual do tabuleiro (lista de 9 elementos).
+    :param move: O índice da jogada considerada (0-8).
+    :return: O índice da jogada se for considerada boa, caso contrário, None.
     """
-    # Implementação de consulta simples à base de conhecimento (exemplo)
-    # Aqui você pode aplicar uma lógica baseada na base de conhecimento.
-    # No momento, retornamos None, o que fará com que o jogador escolha aleatoriamente.
+    # Gera uma representação do tabuleiro após a jogada considerada
+    simulated_board = board[:]
+    simulated_board[move] = 'X'  # Assumindo que o jogador inteligente é 'X'
+
+    # Serializa o estado do tabuleiro como string para consulta
+    board_key = ''.join(simulated_board)
+
+    # Busca na base de conhecimento
+    for record in knowledge_base:
+        if record['play'] == board_key:
+            # Avalia se a jogada é boa com base nas estatísticas armazenadas
+            if record['Wins'] > record['Losses']:  # Exemplo: prioriza jogadas vencedoras
+                return move
+
+    # Se não encontrar um registro apropriado, retorna None
     return None
 
-def final_check(board):
-    if check(board, 'X'):
-        return 'X'
-    elif check(board, 'O'):
-        return 'O'
-    elif all(cell != " " for cell in board):
-        return "Draw"
+def check(tabuleiro, jogador):
+    # Verifica as linhas
+    for i in range(0, 9, 3):
+        if tabuleiro[i] == tabuleiro[i + 1] == tabuleiro[i + 2] == jogador:
+            return True
+
+    # Verifica as colunas
+    for i in range(3):
+        if tabuleiro[i] == tabuleiro[i + 3] == tabuleiro[i + 6] == jogador:
+            return True
+
+    # Verifica as diagonais
+    if tabuleiro[0] == tabuleiro[4] == tabuleiro[8] == jogador:
+        return True
+    if tabuleiro[2] == tabuleiro[4] == tabuleiro[6] == jogador:
+        return True
+
+    return False
+
+def final_check(tabuleiro):
+    # Verifica se algum jogador ganhou
+    if check(tabuleiro, 'O'):
+        return "O venceu!"
+    if check(tabuleiro, 'X'):
+        return "X venceu!"
+
+    # Verifica se o tabuleiro está cheio (empate)
+    if ' ' not in tabuleiro:
+        return "Empate!"
+
+    # Se o jogo não acabou
     return None
 
 def auto_game_mode():
