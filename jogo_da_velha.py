@@ -1,121 +1,91 @@
 import random
-import os
+import matplotlib.pyplot as plt
 
+# Base de conhecimento global
 knowledge_base = []
+# List to track the results of each game (1 = victory, -1 = loss, 0 = draw)
+game_results = []
 
-def save_win_rate_to_txt(wins_x, total_games, mode):
+
+# 1. Função para atualizar os resultados após cada jogo
+def update_game_results(winner):
+    if winner == "X venceu!":
+        game_results.append(1)  # 1 for victory
+    elif winner == "O venceu!":
+        game_results.append(-1)  # -1 for defeat
+    elif winner == "Empate!":
+        game_results.append(0)  # 0 for draw
+
+
+# 2. Função para atualizar a base de conhecimento com a avaliação da jogada
+def update_knowledge_with_rating(play, move, player, score, result):
     """
-    Salva a taxa de vitórias do jogador X a cada 100 jogos em um arquivo .txt.
-    :param wins_x: Número de vitórias do jogador X.
-    :param total_games: Total de jogos completados até o momento.
-    :param mode: Modo de jogo (Inteligente Normal ou Inteligente Champion).
+    Atualiza a base de conhecimento com o resultado de uma jogada e seu score.
+    - result: 'win', 'loss' ou 'draw'
     """
-    win_rate = (wins_x / total_games) * 100
-    filename = f"win_rate_{mode}.txt"
-
-    with open(filename, "a") as f:  # Modo 'a' para adicionar ao final do arquivo
-        f.write(f"Jogos completados: {total_games}\n")
-        f.write(f"Taxa de vitórias de X: {win_rate:.2f}%\n")
-        f.write("=" * 30 + "\n")
-
-def save_moves_to_txt(moves, winner, mode):
-    """
-    Salva as jogadas e o resultado em um arquivo .txt.
-    :param moves: Lista dos estados do tabuleiro após cada jogada.
-    :param winner: Resultado do jogo ('X', 'O' ou 'Draw').
-    :param mode: Modo de jogo (Normal, Champion, Inteligente Normal, Inteligente Champion).
-    """
-    filename = f"game_records_{mode}.txt"
-    with open(filename, "a") as f:
-        f.write(f"Modo de Jogo: {mode}\n")
-        f.write("Jogadas:\n")
-        for i, move in enumerate(moves, 1):
-            f.write(f"  Jogada {i}:\n")
-            for j in range(0, 9, 3):
-                f.write(f"    {' | '.join(move[j:j + 3])}\n")
-            f.write("    -----------\n")
-        f.write(f"Resultado: {winner}\n")
-        f.write("=" * 30 + "\n\n")
-
-def save_summary_to_txt(wins_x, wins_o, num_games, mode):
-    """
-    Salva o resumo das estatísticas (vitórias de X e O) em um arquivo .txt.
-    :param wins_x: Número de vitórias do jogador X.
-    :param wins_o: Número de vitórias do jogador O.
-    :param num_games: Total de jogos.
-    :param mode: Modo de jogo (Normal, Champion, Inteligente Normal, Inteligente Champion).
-    """
-    filename = f"game_summary_{mode}.txt"
-    with open(filename, "a") as f:
-        f.write(f"Modo de Jogo: {mode}\n")
-        f.write(f"Total de Jogos: {num_games}\n")
-        f.write(f"Vitórias do X: {wins_x}\n")
-        f.write(f"Vitórias do O: {wins_o}\n")
-        f.write("=" * 30 + "\n\n")
-
-def save_knowledge_to_txt():
-    filename = "knowledge_base.txt"
-    print(f"Salvando {len(knowledge_base)} registros na base de conhecimento...")
-    with open(filename, "w") as f:
-        for record in knowledge_base:
-            print(record)  # Para depuração
-            f.write(f"Jogada: {record['play']}\n")
-            f.write(f"  Vitórias: {record['Wins']}\n")
-            f.write(f"  Derrotas: {record['Losses']}\n")
-            f.write(f"  Empates: {record['Draws']}\n")
-            f.write(f"  Total de Partidas: {record['Plays']}\n")
-            f.write("-" * 30 + "\n")
-
-def load_knowledge_from_txt():
-    filename = "knowledge_base.txt"
-    if not os.path.exists(filename):
-        print(f"Arquivo {filename} não encontrado.")
-        return []
-
-    knowledge = []
-    with open(filename, "r") as f:
-        current_record = {}
-        for line in f:
-            line = line.strip()
-            print(f"Lendo linha: {line}")  # Verifique a leitura do arquivo
-            if line.startswith("Jogada:"):
-                if current_record:
-                    knowledge.append(current_record)
-                current_record = {"play": line.split(": ")[1]}
-            elif line.startswith("Vitórias:"):
-                current_record["Wins"] = int(line.split(": ")[1])
-            elif line.startswith("Derrotas:"):
-                current_record["Losses"] = int(line.split(": ")[1])
-            elif line.startswith("Empates:"):
-                current_record["Draws"] = int(line.split(": ")[1])
-            elif line.startswith("Total de Partidas:"):
-                current_record["Plays"] = int(line.split(": ")[1])
-        if current_record:
-            knowledge.append(current_record)
-    return knowledge
-
-def update_knowledge_base(play, winner):
-    # Atualiza a base de conhecimento
     existing_record = next((record for record in knowledge_base if record['play'] == play), None)
     if existing_record:
-        # Atualiza o número de vitórias, derrotas, empates e partidas
-        if winner == 'X':
-            existing_record['Wins'] += 1
-        elif winner == 'O':
-            existing_record['Losses'] += 1
+        move_data = existing_record['Moves'].get(move, None)
+        if move_data:
+            # Ajusta o score com base no resultado da jogada
+            if result == "win":
+                move_data['score'] += 5  # Aumenta o score por uma vitória
+            elif result == "loss":
+                move_data['score'] -= 5  # Diminui o score por uma derrota
+            elif result == "draw":
+                move_data['score'] += 1  # Aumento pequeno para empate
         else:
-            existing_record['Draws'] += 1
-        existing_record['Plays'] += 1
+            # Se não houver um registro anterior para esse movimento, cria-se um com o score inicial
+            existing_record['Moves'][move] = {'score': score, 'result': result}
     else:
-        # Cria um novo registro se não encontrar
+        # Se não houver um registro anterior para esse estado do tabuleiro, cria-se um novo
         knowledge_base.append({
             'play': play,
-            'Wins': 1 if winner == 'X' else 0,
-            'Losses': 1 if winner == 'O' else 0,
-            'Draws': 1 if winner == 'Draw' else 0,
-            'Plays': 1
+            'Moves': {move: {'score': score, 'result': result}}
         })
 
+
+# 3. Função para selecionar a melhor jogada com base na base de conhecimento
+def get_best_move_from_knowledge(board, player):
+    possible_moves = [i for i, cell in enumerate(board) if cell == " "]
+    best_move = None
+    best_score = -float('inf')
+
+    # Verifica se esse estado de tabuleiro já foi visto antes
+    board_key = ''.join(board)  # Representa o tabuleiro como uma string para comparação fácil
+
+    # Busca registros anteriores do estado do tabuleiro
+    for record in knowledge_base:
+        if record['play'] == board_key:
+            # Se o tabuleiro foi visto, escolhe a melhor jogada com base na avaliação histórica
+            for move in possible_moves:
+                move_score_data = record['Moves'].get(move, None)
+                if move_score_data:
+                    move_score = move_score_data['score']
+                    if move_score > best_score:
+                        best_score = move_score
+                        best_move = move
+            break
+    else:
+        # Se não houver histórico, escolhe uma jogada aleatória
+        best_move = random.choice(possible_moves)
+
+    return best_move
+
+
+# 4. Função do jogador inteligente utilizando a base de conhecimento
+def intelligent_move(board):
+    best_move = get_best_move_from_knowledge(board, 'X')
+    board[best_move] = 'X'
+
+    # Atualiza a base de conhecimento após a jogada
+    play_key = ''.join(board)
+    update_knowledge_with_rating(play_key, best_move, 'X', 0, 'win')  # Assume 'win' por enquanto
+
+    return board
+
+
+# 5. Exibir o tabuleiro
 def display(board):
     visual_board = ""
     for i in range(3):
@@ -124,79 +94,74 @@ def display(board):
             visual_board += "---+---+---\n"
     print(visual_board)
 
+
+# 6. Máquina simples para fazer jogadas
 def machine(board, player):
     empty = [i for i in range(9) if board[i] == " "]
     if empty:
         board[random.choice(empty)] = player
 
+
+# 7. Máquina campeã
 def champion_machine(board):
-    """
-    Jogada inteligente para o campeão (O) que tenta vencer, bloquear ou jogar em uma posição estratégica.
-    """
-    # Função para verificar se o jogador pode ganhar ou bloquear
     def check_win(board, player):
         for i in range(9):
             if board[i] == " ":
-                board[i] = player  # Simula a jogada
-                if check(board, player):  # Verifica se o jogador ganha
-                    board[i] = " "  # Desfaz a jogada
-                    return i  # Retorna a posição para bloquear ou ganhar
-                board[i] = " "  # Desfaz a jogada
-        return -1  # Não encontrou uma vitória
+                board[i] = player
+                if check(board, player):
+                    board[i] = " "
+                    return i
+                board[i] = " "
+        return -1
 
-    # 1. Tenta vencer jogando 'O' (Campeão)
     pos = check_win(board, 'O')
     if pos != -1:
         board[pos] = 'O'
-        print(f"Campeão (O) jogou para vencer na posição {pos}")
-        print("Tabuleiro após jogada do Campeão:", board)
-        if check(board, 'O'):
-            print("O campeão (O) venceu!")
         return
-
-    # 2. Tenta bloquear uma vitória do 'X'
     pos = check_win(board, 'X')
     if pos != -1:
         board[pos] = 'O'
-        print(f"Campeão (O) bloqueou X na posição {pos}")
-        print("Tabuleiro após jogada do Campeão:", board)
-        if check(board, 'O'):
-            print("O campeão (O) venceu!")
-        if check(board, 'X'):
-            print("O X venceu!")
         return
-
-    # 3. Se não há vitórias ou bloqueios, joga no centro
     if board[4] == " ":
         board[4] = 'O'
-        print("Campeão (O) jogou no centro.")
-        print("Tabuleiro após jogada do Campeão:", board)
-        if check(board, 'O'):
-            print("O campeão (O) venceu!")
         return
-
-    # 4. Se o centro está ocupado, joga em um dos cantos
     for corner in [0, 2, 6, 8]:
         if board[corner] == " ":
             board[corner] = 'O'
-            print(f"Campeão (O) jogou no canto {corner}.")
-            print("Tabuleiro após jogada do Campeão:", board)
-            if check(board, 'O'):
-                print("O campeão (O) venceu!")
             return
-
-    # 5. Se os cantos estão ocupados, joga nas bordas
     for edge in [1, 3, 5, 7]:
         if board[edge] == " ":
             board[edge] = 'O'
-            print(f"Campeão (O) jogou na borda {edge}.")
-            print("Tabuleiro após jogada do Campeão:", board)
-            if check(board, 'O'):
-                print("O campeão (O) venceu!")
-            if check(board, 'X'):
-                print("O X venceu!")
             return
 
+
+# 8. Verificar vitória ou empate
+def check(tabuleiro, jogador):
+    for i in range(0, 9, 3):
+        if tabuleiro[i] == tabuleiro[i + 1] == tabuleiro[i + 2] == jogador:
+            return True
+    for i in range(3):
+        if tabuleiro[i] == tabuleiro[i + 3] == tabuleiro[i + 6] == jogador:
+            return True
+    if tabuleiro[0] == tabuleiro[4] == tabuleiro[8] == jogador:
+        return True
+    if tabuleiro[2] == tabuleiro[4] == tabuleiro[6] == jogador:
+        return True
+    return False
+
+
+# 9. Checar o estado final
+def final_check(tabuleiro):
+    if check(tabuleiro, 'O'):
+        return "O venceu!"
+    if check(tabuleiro, 'X'):
+        return "X venceu!"
+    if ' ' not in tabuleiro:
+        return "Empate!"
+    return None
+
+
+# 10. Jogo no modo normal
 def normal_game():
     board = [" " for _ in range(9)]
     moves = []
@@ -213,17 +178,17 @@ def normal_game():
             break
     return moves, winner
 
+
+# 11. Jogo no modo campeão
 def champion_game():
     board = [" " for _ in range(9)]
     moves = []
     while True:
-        # X (intelligent player) plays first
         machine(board, 'X')
         moves.append(board[:])
         winner = final_check(board)
         if winner:
             break
-        # Champion (O) plays second
         champion_machine(board)
         moves.append(board[:])
         winner = final_check(board)
@@ -231,168 +196,185 @@ def champion_game():
             break
     return moves, winner
 
-def intelligent_game(is_champion_mode=True):
+
+# 12. Inteligente vs Normal
+def intelligent_vs_normal_game():
     board = [" " for _ in range(9)]
     moves = []
-
     while True:
-        # Jogador X (inteligente) faz a primeira jogada
-        move = get_intelligent_move(board)
-        if board[move] == " ":
-            board[move] = 'X'
-        else:
-            raise ValueError(f"Jogada inválida de X na posição {move}. Verifique a lógica do jogador inteligente.")
-
-        # Checa para ver se alguém venceu e registra
-        moves.append(board[:])
-        winner = final_check(board)
+        intelligent_move(board)  # Intelligent player's move
+        moves.append(board[:])  # Save the board after the intelligent player's move
+        winner = final_check(board)  # Check if there is a winner
         if winner:
+            # Update game_results based on the winner
+            if winner == "X venceu!":
+                game_results.append(1)  # Intelligent player wins (X)
+            elif winner == "O venceu!":
+                game_results.append(-1)  # Normal machine wins (O)
+            else:
+                game_results.append(0)  # Draw
             break
 
-        # É a vez do jogador O (campeão)
-        if is_champion_mode:
-            champion_machine(board)
-        else:
-            machine(board, 'O')  # Jogador O joga aleatoriamente
-
-        # Verifica após a jogada do jogador O
-        moves.append(board[:])
-        winner = final_check(board)
+        machine(board, 'O')  # Normal machine's move (player O)
+        moves.append(board[:])  # Save the board after the machine's move
+        winner = final_check(board)  # Check if there is a winner
         if winner:
+            # Update game_results based on the winner
+            if winner == "X venceu!":
+                game_results.append(1)  # Intelligent player wins (X)
+            elif winner == "O venceu!":
+                game_results.append(-1)  # Normal machine wins (O)
+            else:
+                game_results.append(0)  # Draw
             break
 
     return moves, winner
 
-def get_intelligent_move(board):
-    """
-    Retorna a próxima jogada inteligente baseada na base de conhecimento.
-    Se não houver conhecimento suficiente, realiza uma jogada aleatória.
-    """
-    # Lista de movimentos possíveis
-    possible_moves = [i for i, cell in enumerate(board) if cell == " "]
 
-    # Consulta a base de conhecimento para cada movimento
-    for move in possible_moves:
-        intelligent_move = consult_knowledge_base(board, move)
-        if intelligent_move is not None:
-            return intelligent_move
+# 13. Inteligente vs Campeão
+def intelligent_vs_champion_game():
+    board = [" " for _ in range(9)]
+    moves = []
+    while True:
+        intelligent_move(board)
+        moves.append(board[:])
+        winner = final_check(board)
+        if winner:
+            break
+        champion_machine(board)
+        moves.append(board[:])
+        winner = final_check(board)
+        if winner:
+            break
+    return moves, winner
 
-    # Caso nenhuma jogada inteligente seja encontrada, faz uma jogada aleatória
-    return random.choice(possible_moves)
 
-def consult_knowledge_base(board, move):
-    """
-    Consulta a base de conhecimento para determinar se a jogada é inteligente.
-    :param board: O estado atual do tabuleiro (lista de 9 elementos).
-    :param move: O índice da jogada considerada (0-8).
-    :return: O índice da jogada se for considerada boa, caso contrário, None.
-    """
-    # Gera uma representação do tabuleiro após a jogada considerada
-    simulated_board = board[:]
-    simulated_board[move] = 'X'  # Assumindo que o jogador inteligente é 'X'
+# 14. Função para plotar o gráfico de desempenho
+def plot_performance():
+    # Count victories over time
+    victories = 0
+    victory_progress = []
 
-    # Serializa o estado do tabuleiro como string para consulta
-    board_key = ''.join(simulated_board)
+    # Check if game_results is populated
+    print(f"Game Results: {game_results}")
 
-    # Busca na base de conhecimento
+    for result in game_results:
+        if result == 1:
+            victories += 1
+        elif result == -1:
+            victories -= 1
+        victory_progress.append(victories)
+
+    print(f"Victory Progress: {victory_progress}")  # Debug output
+
+    if not victory_progress:
+        print("Nenhum resultado de jogo encontrado para plotar.")
+        return
+
+    # Plot the results
+    plt.figure(figsize=(10, 6))
+    plt.plot(victory_progress, label='Vitórias Acumuladas', color='green', linestyle='-', markersize=5, linewidth=1)
+    plt.scatter(range(len(victory_progress)), victory_progress, color='green', zorder=5)
+
+    plt.title('Desempenho do Jogador Inteligente ao Longo dos Jogos')
+    plt.xlabel('Número do Jogo')
+    plt.ylabel('Vitórias Acumuladas')
+    plt.legend()
+
+    plt.show()
+
+
+
+# 15. Função para exibir o progresso das jogadas
+def display_move_progress():
+    move_scores = {}
+
+    # Coleta os scores de cada movimento
     for record in knowledge_base:
-        if record['play'] == board_key:
-            # Avalia se a jogada é boa com base nas estatísticas armazenadas
-            if record['Wins'] > record['Losses']:  # Exemplo: prioriza jogadas vencedoras
-                return move
+        for move, data in record['Moves'].items():
+            if move not in move_scores:
+                move_scores[move] = []
+            move_scores[move].append(data['score'])
 
-    # Se não encontrar um registro apropriado, retorna None
-    return None
+    # Ordena os movimentos pela média dos scores
+    sorted_move_scores = sorted(move_scores.items(), key=lambda x: sum(x[1]) / len(x[1]), reverse=True)
 
-def check(tabuleiro, jogador):
-    # Verifica as linhas
-    for i in range(0, 9, 3):
-        if tabuleiro[i] == tabuleiro[i + 1] == tabuleiro[i + 2] == jogador:
-            return True
+    # Cria um tabuleiro vazio
+    board = [' ' for _ in range(9)]
 
-    # Verifica as colunas
+    # Preenche o tabuleiro com as médias de score
+    for move, scores in sorted_move_scores:
+        avg_score = sum(scores) / len(scores)
+        board[move] = f'{avg_score:.2f}'
+
+    # Exibe o tabuleiro com as médias de score
+    print("Tabuleiro de Movimentos:")
     for i in range(3):
-        if tabuleiro[i] == tabuleiro[i + 3] == tabuleiro[i + 6] == jogador:
-            return True
+        print(" | ".join(board[i * 3:(i + 1) * 3]))
+        if i < 2:
+            print("---+---+---")
 
-    # Verifica as diagonais
-    if tabuleiro[0] == tabuleiro[4] == tabuleiro[8] == jogador:
-        return True
-    if tabuleiro[2] == tabuleiro[4] == tabuleiro[6] == jogador:
-        return True
 
-    return False
+# 16. Função para avaliar melhorias nas jogadas
+def evaluate_move_improvement():
+    move_scores = []
+    for record in knowledge_base:
+        for move, data in record['Moves'].items():
+            move_scores.append(data['score'])
 
-def final_check(tabuleiro):
-    # Verifica se algum jogador ganhou
-    if check(tabuleiro, 'O'):
-        return "O venceu!"
-    if check(tabuleiro, 'X'):
-        return "X venceu!"
+    if move_scores:
+        avg_score = sum(move_scores) / len(move_scores)
+        print(f"Média de score geral das jogadas: {avg_score:.2f}")
+    else:
+        print("Ainda não há jogadas registradas.")
 
-    # Verifica se o tabuleiro está cheio (empate)
-    if ' ' not in tabuleiro:
-        return "Empate!"
 
-    # Se o jogo não acabou
-    return None
-
+# 17. Modo automático de jogo
 def auto_game_mode():
     global knowledge_base
-    knowledge_base = load_knowledge_from_txt()
+    knowledge_base = []  # Reinicia a base de conhecimento no início do modo automático
     print("Escolha o modo de jogo:")
     print("1. Normal")
     print("2. Champion")
-    print("3. Inteligente Normal")
-    print("4. Inteligente Champion")
+    print("3. Intelligent vs Normal")
+    print("4. Intelligent vs Champion")
     choice = input("Escolha o modo de jogo desejado (1/2/3/4): ")
-    while choice not in ['1', '2', '3', '4']:
-        print("Escolha inválida. Tente novamente.")
-        choice = input("Escolha o modo de jogo desejado (1/2/3/4): ")
     num_games = int(input("Digite o número de jogos: "))
-    wins_x = 0
-    wins_o = 0
-    completed_games = 0  # Contador de partidas já realizadas
+    wins_x, wins_o = 0, 0
 
     for _ in range(num_games):
         if choice == '1':
             moves, winner = normal_game()
+            mode = "Normal"
         elif choice == '2':
             moves, winner = champion_game()
+            mode = "Champion"
         elif choice == '3':
-            moves, winner = intelligent_game(False)
-        elif choice == '4':
-            moves, winner = intelligent_game(True)
+            moves, winner = intelligent_vs_normal_game()
+            mode = "Intelligent vs Normal"
+        else:
+            moves, winner = intelligent_vs_champion_game()
+            mode = "Intelligent vs Champion"
 
-        save_moves_to_txt(moves, winner, choice)
-        if winner == "X":
+        if winner == "X venceu!":
             wins_x += 1
-        elif winner == "O":
+        elif winner == "O venceu!":
             wins_o += 1
 
-        completed_games += 1
-
-        # Atualizar a base de conhecimento apenas para os modos inteligentes
-        if choice in ['3', '4']:
-            update_knowledge_base(str(moves[-1]), winner)
-
-        # A cada 100 partidas, salvar a taxa de vitória (apenas para modos inteligentes)
-        if choice in ['3', '4'] and completed_games % 100 == 0:
-            save_win_rate_to_txt(wins_x, completed_games, choice)
-
-    print(f"Modo de Jogo: {choice}")
-    print(f"Total de jogos: {num_games}")
+    print(f"\nResultado após {num_games} jogos em modo {mode}:")
     print(f"Vitórias de X: {wins_x}")
     print(f"Vitórias de O: {wins_o}")
-    save_summary_to_txt(wins_x, wins_o, num_games, choice)
-    save_knowledge_to_txt()
 
-    # Salvar a taxa de vitória final se o número de partidas não for múltiplo de 100
-    if choice in ['3', '4'] and completed_games % 100 != 0:
-        save_win_rate_to_txt(wins_x, completed_games, choice)
+    if choice == '3':
+        plot_performance()
 
-    print("Banco de conhecimento e taxa de vitória salvos.")
+    print("\nProgresso das jogadas do jogador inteligente:")
+    display_move_progress()
 
-# Função principal
+    print("\nAvaliação das melhorias nas jogadas:")
+    evaluate_move_improvement()
+
+
+# Ponto de entrada
 if __name__ == "__main__":
     auto_game_mode()
