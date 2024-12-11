@@ -104,6 +104,7 @@ def machine(board, player):
 
 # 7. Máquina campeã
 def champion_machine(board):
+    # Helper function to find a winning move for the given player
     def check_win(board, player):
         for i in range(9):
             if board[i] == " ":
@@ -114,21 +115,30 @@ def champion_machine(board):
                 board[i] = " "
         return -1
 
-    pos = check_win(board, 'O')
+    # Block opponent's winning move
+    pos = check_win(board, 'X')  # Check if the opponent (X) can win
     if pos != -1:
         board[pos] = 'O'
         return
-    pos = check_win(board, 'X')
+
+    # Try to win if possible
+    pos = check_win(board, 'O')  # Check if the champion (O) can win
     if pos != -1:
         board[pos] = 'O'
         return
+
+    # Center is a strategic position, try to take it if available
     if board[4] == " ":
         board[4] = 'O'
         return
+
+    # Take corners (strong positions) if available
     for corner in [0, 2, 6, 8]:
         if board[corner] == " ":
             board[corner] = 'O'
             return
+
+    # Take edges if available
     for edge in [1, 3, 5, 7]:
         if board[edge] == " ":
             board[edge] = 'O'
@@ -329,7 +339,7 @@ def evaluate_move_improvement():
         print("Ainda não há jogadas registradas.")
 
 
-# 17. Modo automático de jogo
+# 18. Modo automático de jogo
 def auto_game_mode():
     global knowledge_base
     knowledge_base = []  # Reinicia a base de conhecimento no início do modo automático
